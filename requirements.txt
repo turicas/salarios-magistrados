@@ -1,0 +1,6 @@
+requests
+rows
+lxml
+xlrd
+xlwt
+openpyxl
