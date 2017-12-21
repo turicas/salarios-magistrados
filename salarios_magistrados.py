@@ -65,11 +65,21 @@ def get_links(date):
 
 def download(download_info):
     url, save_path = download_info
-    print(f'Downloading {url}...', end='', flush=True)
+    print(f'Downloading {url}...')
     response = requests.get(url)
 
     with open(save_path, mode='wb') as fobj:
         fobj.write(response.content)
+
+def download_and_extract(download_info):
+    url, save_path = download_info
+    print(f'Downloading {url}...')
+    response = requests.get(url)
+
+    with open(save_path, mode='wb') as fobj:
+        fobj.write(response.content)
+    
+    return {'result': extract(save_path), 'filename': save_path}
 
 
 def extract_metadata(filename):
@@ -103,7 +113,7 @@ def extract_metadata(filename):
 
 
 def extract(filename):
-    print(f'Extracting {filename.name}...', end='', flush=True)
+    print(f'Extracting {filename.name}...')
     try:
         # TODO: check header position
         if filename.name.endswith('.xls'):
@@ -176,20 +186,24 @@ def main():
     # Download all the links, with multiple connections
     filenames = []
     download_list = []
+    result = []
+
     for link in links:
         save_path = download_path / urlparse(link.url).path.split('/')[-1]
         filenames.append(save_path)
         if not save_path.exists():
-            print(f'Set to download {link.url}...', end='', flush=True)
+            print(f'Set to download {link.url}...')
             download_list.append((link.url, save_path))
         else:
             print(f'Skipping {save_path.name}...')
 
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        for item in zip(download_list, executor.map(download, download_list)):
+        for item, data in zip(download_list, executor.map(download_and_extract, download_list)):
+            filenames.remove(data['filename'])
+            if data['result']:
+                result.extend(data['result'])
             print(' done.')
 
-    result = []
     # Extract data from all the spreadsheets, with threads
     with concurrent.futures.ProcessPoolExecutor() as executor:
         for filename, data in zip(filenames, executor.map(extract, filenames)):
