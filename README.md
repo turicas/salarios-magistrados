@@ -37,5 +37,21 @@ Para rodar:
 python salarios_magistrados.py
 ```
 
+## Possíveis problemas
+
+```locale.Error: unsupported locale setting```
+
+Você não tem a localização pt_BR, que é necessária para que o script funcione corretamente.
+
+No Ubuntu, é possivel resolver com:
+
+```bash
+sudo locale-gen pt_BR
+sudo locale-gen pt_BR.UTF-8
+sudo update-locale
+```
+
+No Windows, talvez seja necessário instalar os dicionários em Português-Brasil para que funcione corretamente.
+
 Um diretório `download` será criado com as planilhas baixadas e `output` com os
 resultados.
