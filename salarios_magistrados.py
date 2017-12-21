@@ -98,6 +98,14 @@ def extract_metadata(filename):
 
 
 def extract(filename):
+    # Checking OS version to use proper locale
+    if sys.platform.startswith('linux'):
+	    locale = 'pt_BR.UTF-8'
+    elif sys.platform.startswith('win32'):
+        locale = 'ptb_bra'
+    else:
+	    raise ValueError('Platform not tested')
+
     # TODO: check header position
     if filename.name.endswith('.xls'):
         import_function = rows.import_from_xls
@@ -109,7 +117,7 @@ def extract(filename):
     metadata = extract_metadata(filename)
 
     result = []
-    with rows.locale_context('pt_BR.UTF-8'):
+    with rows.locale_context(locale):
         table = import_function(
             str(filename),
             start_row=21,
