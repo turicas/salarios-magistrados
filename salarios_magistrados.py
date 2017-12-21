@@ -176,7 +176,6 @@ def main():
     links = get_links(date=today)
     rows.export_to_csv(links, output_path / f'links-{today}.csv')
 
-    # Download all the links, with multiple connections
     filenames = []
     download_list = []
     result = []
@@ -190,17 +189,16 @@ def main():
         else:
             print(f'Skipping {save_path.name}...')
 
-    print(len(filenames))
+    # Download all the links, with multiple connections and extract
     with concurrent.futures.ProcessPoolExecutor() as executor:
         for item, data in zip(download_list, executor.map(download_and_extract, download_list)):
             filenames.remove(data['filename'])
             if data['result']:
                 result.extend(data['result'])
 
-    # Extract data from all the spreadsheets, with threads
-    print(len(filenames))
+    # Extract data from all the remanescent spreadsheets, with threads
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        for filename, data in zip(filenames, executor.map(extract, filenames)):
+        for item, data in zip(filenames, executor.map(extract, filenames)):
             if data:
                 result.extend(data)
 
