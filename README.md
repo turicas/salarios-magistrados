@@ -36,6 +36,8 @@ Para rodar:
 ```bash
 python salarios_magistrados.py
 ```
+Um diretório `download` será criado com as planilhas baixadas e `output` com os
+resultados.
 
 ## Possíveis problemas
 
@@ -52,6 +54,3 @@ sudo update-locale
 ```
 
 No Windows, talvez seja necessário instalar os dicionários em Português-Brasil para que funcione corretamente.
-
-Um diretório `download` será criado com as planilhas baixadas e `output` com os
-resultados.
