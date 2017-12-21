@@ -11,6 +11,8 @@ import openpyxl
 import requests
 import rows
 import xlrd
+import concurrent.futures
+
 
 
 FIELDS = OrderedDict()
@@ -61,8 +63,11 @@ def get_links(date):
     return rows.import_from_dicts(result)
 
 
-def download(url, save_path):
+def download(download_info):
+    url, save_path = download_info
+    print(f'Downloading {url}...', end='', flush=True)
     response = requests.get(url)
+
     with open(save_path, mode='wb') as fobj:
         fobj.write(response.content)
 
@@ -98,39 +103,46 @@ def extract_metadata(filename):
 
 
 def extract(filename):
-    # TODO: check header position
-    if filename.name.endswith('.xls'):
-        import_function = rows.import_from_xls
-    elif filename.name.endswith('.xlsx'):
-        import_function = rows.import_from_xlsx
+    print(f'Extracting {filename.name}...', end='', flush=True)
+    try:
+        # TODO: check header position
+        if filename.name.endswith('.xls'):
+            import_function = rows.import_from_xls
+        elif filename.name.endswith('.xlsx'):
+            import_function = rows.import_from_xlsx
+        else:
+            raise ValueError('Cannot parse this spreadsheet')
+
+        metadata = extract_metadata(filename)
+
+        result = []
+        with rows.locale_context('pt_BR.UTF-8'):
+            table = import_function(
+                str(filename),
+                start_row=21,
+                fields=FIELDS,
+                skip_header=False,
+            )
+            for row in table:
+                row_data = row._asdict()
+                if is_filled(row_data):
+                    # Created this way so first columns will be metadata
+                    data = metadata.copy()
+                    data.update(row_data)
+                    for key, value in data.items():
+                        if isinstance(value, Decimal):
+                            data[key] = round(value, 2)
+                    result.append(data)
+
+        # TODO: check rows with rendimento_liquido = 0
+        result.sort(key=lambda row: (row['orgao'],
+                                     - (row['rendimento_liquido'] or 0)))
+    except Exception as exp:
+            import traceback
+            print(f' ERROR! {traceback.format_exc().splitlines()[-1]}')
     else:
-        raise ValueError('Cannot parse this spreadsheet')
-
-    metadata = extract_metadata(filename)
-
-    result = []
-    with rows.locale_context('pt_BR.UTF-8'):
-        table = import_function(
-            str(filename),
-            start_row=21,
-            fields=FIELDS,
-            skip_header=False,
-        )
-        for row in table:
-            row_data = row._asdict()
-            if is_filled(row_data):
-                # Created this way so first columns will be metadata
-                data = metadata.copy()
-                data.update(row_data)
-                for key, value in data.items():
-                    if isinstance(value, Decimal):
-                        data[key] = round(value, 2)
-                result.append(data)
-
-    # TODO: check rows with rendimento_liquido = 0
-    result.sort(key=lambda row: (row['orgao'],
-                                 - (row['rendimento_liquido'] or 0)))
-    return result
+        print(' done.')
+        return result
 
 
 def export_csv(data, filename, encoding='utf8'):
@@ -161,30 +173,28 @@ def main():
     links = get_links(date=today)
     rows.export_to_csv(links, output_path / f'links-{today}.csv')
 
-    # Download all the links
+    # Download all the links, with multiple connections
     filenames = []
+    download_list = []
     for link in links:
         save_path = download_path / urlparse(link.url).path.split('/')[-1]
         filenames.append(save_path)
         if not save_path.exists():
-            print(f'Downloading {link.url}...', end='', flush=True)
-            download(link.url, save_path)
-            print(' done.')
+            print(f'Set to download {link.url}...', end='', flush=True)
+            download_list.append((link.url, save_path))
         else:
             print(f'Skipping {save_path.name}...')
 
-    # Extract data from all the spreadsheets
-    result = []
-    for filename in filenames:
-        print(f'Extracting {filename.name}...', end='', flush=True)
-        try:
-            data = extract(filename)
-        except Exception as exp:
-            import traceback
-            print(f' ERROR! {traceback.format_exc().splitlines()[-1]}')
-        else:
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        for item in zip(download_list, executor.map(download, download_list)):
             print(' done.')
-            result.extend(data)
+
+    result = []
+    # Extract data from all the spreadsheets, with threads
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        for filename, data in zip(filenames, executor.map(extract, filenames)):
+            if data:
+                result.extend(data)
 
     # Extract everything to a new CSV
     output = output_path / f'salarios-magistrados-{today}.csv'
