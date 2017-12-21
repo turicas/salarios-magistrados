@@ -63,14 +63,6 @@ def get_links(date):
     return rows.import_from_dicts(result)
 
 
-def download(download_info):
-    url, save_path = download_info
-    print(f'Downloading {url}...')
-    response = requests.get(url)
-
-    with open(save_path, mode='wb') as fobj:
-        fobj.write(response.content)
-
 def download_and_extract(download_info):
     url, save_path = download_info
     print(f'Downloading {url}...')
@@ -79,6 +71,7 @@ def download_and_extract(download_info):
     with open(save_path, mode='wb') as fobj:
         fobj.write(response.content)
     
+    print(f'Download {url} finished...')
     return {'result': extract(save_path), 'filename': save_path}
 
 
@@ -151,7 +144,7 @@ def extract(filename):
             import traceback
             print(f' ERROR! {traceback.format_exc().splitlines()[-1]}')
     else:
-        print(' done.')
+        print(f'Extracting {filename.name} done...')
         return result
 
 
@@ -197,14 +190,15 @@ def main():
         else:
             print(f'Skipping {save_path.name}...')
 
+    print(len(filenames))
     with concurrent.futures.ProcessPoolExecutor() as executor:
         for item, data in zip(download_list, executor.map(download_and_extract, download_list)):
             filenames.remove(data['filename'])
             if data['result']:
                 result.extend(data['result'])
-            print(' done.')
 
     # Extract data from all the spreadsheets, with threads
+    print(len(filenames))
     with concurrent.futures.ProcessPoolExecutor() as executor:
         for filename, data in zip(filenames, executor.map(extract, filenames)):
             if data:
