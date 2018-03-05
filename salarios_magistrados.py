@@ -5,7 +5,7 @@ import io
 import pathlib
 from collections import OrderedDict
 from decimal import Decimal
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, unquote
 
 import openpyxl
 import requests
@@ -54,7 +54,7 @@ def get_links(date):
 
         data = {
             'name': row.name.replace('\xa0', ' '),
-            'url': urljoin(url, row.url),
+            'url': unquote(urljoin(url, row.url)).strip(),
             'date_scraped': date,
         }
         result.append(data)
@@ -63,6 +63,9 @@ def get_links(date):
 
 def download(url, save_path):
     response = requests.get(url)
+    if response.status_code >= 400:
+        raise RuntimeError(f'ERROR downloading {url}')
+
     with open(save_path, mode='wb') as fobj:
         fobj.write(response.content)
 
@@ -97,7 +100,7 @@ def extract_metadata(filename):
     return meta
 
 
-def extract(filename):
+def extract(filename, url):
     # TODO: check header position
     if filename.name.endswith('.xls'):
         import_function = rows.import_from_xls
@@ -107,6 +110,7 @@ def extract(filename):
         raise ValueError('Cannot parse this spreadsheet')
 
     metadata = extract_metadata(filename)
+    metadata['url'] = url
 
     result = []
     with rows.locale_context('pt_BR.UTF-8'):
@@ -162,23 +166,27 @@ def main():
     rows.export_to_csv(links, output_path / f'links-{today}.csv')
 
     # Download all the links
-    filenames = []
+    files = {}
     for link in links:
         save_path = download_path / urlparse(link.url).path.split('/')[-1]
-        filenames.append(save_path)
+        files[save_path] = link.url
         if not save_path.exists():
             print(f'Downloading {link.url}...', end='', flush=True)
-            download(link.url, save_path)
-            print(' done.')
+            try:
+                download(link.url, save_path)
+            except RuntimeError as exception:
+                print(exception.args[0])
+            else:
+                print(' done.')
         else:
             print(f'Skipping {save_path.name}...')
 
     # Extract data from all the spreadsheets
     result = []
-    for filename in filenames:
+    for filename, url in files.items():
         print(f'Extracting {filename.name}...', end='', flush=True)
         try:
-            data = extract(filename)
+            data = extract(filename, url)
         except Exception as exp:
             import traceback
             print(f' ERROR! {traceback.format_exc().splitlines()[-1]}')
