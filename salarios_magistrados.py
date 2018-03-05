@@ -85,6 +85,16 @@ def extract_metadata(filename):
                 value = cell_value(sheet, row, 1)
             meta[key] = value
 
+        # Detect first line of data
+        found_header = False
+        for row in range(18, 25):
+            value = cell_value(sheet, row, 1)
+            if value == 'Nome':
+                found_header = True
+            elif found_header and value is not None:
+                meta['start_row'] = row + 1
+                break
+
     elif filename.name.endswith('.xlsx'):
         book = openpyxl.load_workbook(filename)
         sheet = book.get_sheet_by_name('Contracheque')
@@ -97,11 +107,20 @@ def extract_metadata(filename):
                 value = str(datetime.date(value.year, value.month, value.day))
             meta[key] = value
 
+        # Detect first line of data
+        found_header = False
+        for row in range(19, 25):
+            value = cell_value(sheet[f'A{row}'])
+            if value in ('Nome', 'CPF'):
+                found_header = True
+            elif found_header and value is not None:
+                meta['start_row'] = row + 1
+                break
+
     return meta
 
 
 def extract(filename, url):
-    # TODO: check header position
     if filename.name.endswith('.xls'):
         import_function = rows.import_from_xls
     elif filename.name.endswith('.xlsx'):
@@ -111,25 +130,24 @@ def extract(filename, url):
 
     metadata = extract_metadata(filename)
     metadata['url'] = url
+    start_row = metadata.pop('start_row')
 
     result = []
-    with rows.locale_context('pt_BR.UTF-8'):
-        table = import_function(
-            str(filename),
-            start_row=21,
-            fields=FIELDS,
-            skip_header=False,
-        )
-        for row in table:
-            row_data = row._asdict()
-            if is_filled(row_data):
-                # Created this way so first columns will be metadata
-                data = metadata.copy()
-                data.update(row_data)
-                for key, value in data.items():
-                    if isinstance(value, Decimal):
-                        data[key] = round(value, 2)
-                result.append(data)
+    table = import_function(
+        str(filename),
+        start_row=start_row,
+        fields=FIELDS,
+        skip_header=False,
+    )
+    for row in table:
+        row_data = row._asdict()
+        if is_filled(row_data):
+            data = metadata.copy()
+            data.update(row_data)
+            for key, value in data.items():
+                if isinstance(value, Decimal):
+                    data[key] = round(value, 2)
+            result.append(data)
 
     # TODO: check rows with rendimento_liquido = 0
     result.sort(key=lambda row: (row['orgao'],
