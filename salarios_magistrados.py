@@ -48,7 +48,7 @@ def get_links(date):
     # Filter out links which don't point to spreadsheets
     result = []
     for row in table:
-        if row.name is None or row.name == 'documento padrão' or \
+        if not (row.name or '').strip() or row.name == 'documento padrão' or \
                 '.xls' not in row.url:
             continue
 
