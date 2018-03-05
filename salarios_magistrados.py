@@ -96,7 +96,7 @@ def extract_metadata(filename):
                 break
 
     elif filename.name.endswith('.xlsx'):
-        book = openpyxl.load_workbook(filename)
+        book = openpyxl.load_workbook(filename, data_only=True)
         sheet = book.get_sheet_by_name('Contracheque')
         cell_value = rows.plugins.xlsx._cell_to_python
         data = [('A16', 'D16'), ('A17', 'D17'), ('A18', 'D18')]
@@ -118,6 +118,20 @@ def extract_metadata(filename):
                 break
 
     return meta
+
+
+def convert_row(row_data, metadata):
+    data = metadata.copy()
+    data.update(row_data)
+    for key, value in data.items():
+        if isinstance(value, Decimal):
+            data[key] = round(value, 2)
+
+    if len(data['mesano_de_referencia']) == 7:  # as in `01/2018`
+        parts = data['mesano_de_referencia'].split('/')
+        data['mesano_de_referencia'] = f'{parts[1]}-{parts[0]}-01'
+
+    return data
 
 
 def extract(filename, url):
@@ -142,12 +156,7 @@ def extract(filename, url):
     for row in table:
         row_data = row._asdict()
         if is_filled(row_data):
-            data = metadata.copy()
-            data.update(row_data)
-            for key, value in data.items():
-                if isinstance(value, Decimal):
-                    data[key] = round(value, 2)
-            result.append(data)
+            result.append(convert_row(row_data, metadata))
 
     # TODO: check rows with rendimento_liquido = 0
     result.sort(key=lambda row: (row['orgao'],
