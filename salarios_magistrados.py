@@ -126,6 +126,8 @@ def convert_row(row_data, metadata):
     for key, value in data.items():
         if isinstance(value, Decimal):
             data[key] = round(value, 2)
+        elif isinstance(value, str):
+            data[key] = value.strip()
 
     if len(data['mesano_de_referencia']) == 7:  # as in `01/2018`
         parts = data['mesano_de_referencia'].split('/')
