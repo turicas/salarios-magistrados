@@ -147,8 +147,10 @@ def export_csv(data, filename, encoding='utf8'):
 def is_filled(data):
     null_set = {'', Decimal('0'), None, '0', '***.***.***-**'}
     values = set(data.values())
+    values_are_filled = not values.issubset(null_set)
+    has_name = (data['nome'] or '').strip() != ''
 
-    return not values.issubset(null_set)
+    return values_are_filled and has_name
 
 
 def main():
