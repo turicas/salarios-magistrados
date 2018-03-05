@@ -195,32 +195,34 @@ def main():
     rows.export_to_csv(links, output_path / f'links-{today}.csv')
 
     # Download all the links
-    files = {}
+    result = []
     for link in links:
-        save_path = download_path / urlparse(link.url).path.split('/')[-1]
-        files[save_path] = link.url
-        if not save_path.exists():
-            print(f'Downloading {link.url}...', end='', flush=True)
+        print(link.name)
+
+        filename = download_path / urlparse(link.url).path.split('/')[-1]
+
+        # Download file
+        print(f'  Downloading ({link.url})...', end='', flush=True)
+        if filename.exists():
+            print(f' already downloaded.')
+        else:
             try:
-                download(link.url, save_path)
+                download(link.url, filename)
             except RuntimeError as exception:
-                print(exception.args[0])
+                print(f' {exception.args[0]}')
+                continue
             else:
                 print(' done.')
-        else:
-            print(f'Skipping {save_path.name}...')
 
-    # Extract data from all the spreadsheets
-    result = []
-    for filename, url in files.items():
-        print(f'Extracting {filename.name}...', end='', flush=True)
+        # Extract data
+        print(f'  Extracting ({filename})...', end='', flush=True)
         try:
-            data = extract(filename, url)
+            data = extract(filename, link.url)
         except Exception as exp:
             import traceback
             print(f' ERROR! {traceback.format_exc().splitlines()[-1]}')
         else:
-            print(' done.')
+            print(f' done (rows extracted: {len(data)}).')
             result.extend(data)
 
     # Extract everything to a new CSV
