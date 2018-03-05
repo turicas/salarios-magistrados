@@ -134,7 +134,7 @@ def convert_row(row_data, metadata):
     return data
 
 
-def extract(filename, url):
+def extract(filename, link):
     if filename.name.endswith('.xls'):
         import_function = rows.import_from_xls
     elif filename.name.endswith('.xlsx'):
@@ -143,7 +143,8 @@ def extract(filename, url):
         raise ValueError('Cannot parse this spreadsheet')
 
     metadata = extract_metadata(filename)
-    metadata['url'] = url
+    metadata['url'] = link.url
+    metadata['tribunal'] = link.name
     start_row = metadata.pop('start_row')
 
     result = []
@@ -217,7 +218,7 @@ def main():
         # Extract data
         print(f'  Extracting ({filename})...', end='', flush=True)
         try:
-            data = extract(filename, link.url)
+            data = extract(filename, link)
         except Exception as exp:
             import traceback
             print(f' ERROR! {traceback.format_exc().splitlines()[-1]}')
