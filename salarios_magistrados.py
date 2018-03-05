@@ -139,7 +139,7 @@ def extract(filename, url):
 
 def export_csv(data, filename, encoding='utf8'):
     with open(filename, mode='w', encoding=encoding) as fobj:
-        writer = csv.DictWriter(fobj, fieldnames=data[0].keys())
+        writer = csv.DictWriter(fobj, fieldnames=sorted(data[0].keys()))
         writer.writeheader()
         for row in data:
             writer.writerow(row)
