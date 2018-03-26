@@ -100,7 +100,7 @@ def extract_metadata(filename):
 
     elif filename.name.endswith('.xlsx'):
         book = openpyxl.load_workbook(filename, data_only=True)
-        sheet = book.get_sheet_by_name('Contracheque')
+        sheet = book['Contracheque']
         cell_value = rows.plugins.xlsx._cell_to_python
         data = [('A16', 'D16'), ('A17', 'D17'), ('A18', 'D18')]
         for key, value in data:
