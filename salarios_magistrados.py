@@ -3,6 +3,7 @@ import csv
 import datetime
 import io
 import pathlib
+import re
 from collections import OrderedDict
 from decimal import Decimal
 from urllib.parse import urljoin, urlparse, unquote
@@ -26,6 +27,7 @@ for field_name in field_names:
     else:
         field_type = rows.fields.DecimalField
     FIELDS[field_name] = field_type
+regexp_date = re.compile(r'[0-9]{4}-[0-9]{2}-[0-9]{2}')
 
 
 def get_links(date):
@@ -117,6 +119,16 @@ def extract_metadata(filename):
                 meta['start_row'] = row + 1
                 break
 
+    if isinstance(meta['data_de_publicacao'], str):
+        assert regexp_date.match(meta['data_de_publicacao'])
+    else:
+        meta['data_de_publicacao'] = None
+
+    if isinstance(meta['mesano_de_referencia'], str):
+        assert regexp_date.match(meta['mesano_de_referencia'])
+    else:
+        meta['mesano_de_referencia'] = None
+
     return meta
 
 
@@ -129,9 +141,14 @@ def convert_row(row_data, metadata):
         elif isinstance(value, str):
             data[key] = value.strip()
 
-    if len(data['mesano_de_referencia']) == 7:  # as in `01/2018`
-        parts = data['mesano_de_referencia'].split('/')
-        data['mesano_de_referencia'] = f'{parts[1]}-{parts[0]}-01'
+    if data['mesano_de_referencia'] is not None:
+        if len(data['mesano_de_referencia']) == 7:  # as in '01/2018'
+            parts = data['mesano_de_referencia'].split('/')
+            data['mesano_de_referencia'] = f'{parts[1]}-{parts[0]}-01'
+        else:
+            parts = data['mesano_de_referencia'].split('-')
+            data['mesano_de_referencia'] = f'{parts[0]}-{parts[1]}-01'
+
 
     return data
 
@@ -202,10 +219,9 @@ def main():
     for link in links:
         print(link.name)
 
-        filename = download_path / urlparse(link.url).path.split('/')[-1]
-
         # Download file
         print(f'  Downloading ({link.url})...', end='', flush=True)
+        filename = download_path / urlparse(link.url).path.split('/')[-1]
         if filename.exists():
             print(f' already downloaded.')
         else:
