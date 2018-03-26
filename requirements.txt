@@ -1,5 +1,5 @@
 requests
-rows
+git+https://github.com/turicas/rows.git@develop
 lxml
 xlrd
 xlwt
