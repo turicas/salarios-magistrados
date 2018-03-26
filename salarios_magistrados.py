@@ -28,6 +28,7 @@ for field_name in field_names:
         field_type = rows.fields.DecimalField
     FIELDS[field_name] = field_type
 regexp_date = re.compile(r'[0-9]{4}-[0-9]{2}-[0-9]{2}')
+regexp_numbers = re.compile(r'[0-9]')
 
 
 def get_links(date):
@@ -149,6 +150,7 @@ def convert_row(row_data, metadata):
             parts = data['mesano_de_referencia'].split('-')
             data['mesano_de_referencia'] = f'{parts[0]}-{parts[1]}-01'
 
+    data['cpf'] = ''.join(regexp_numbers.findall(data['cpf']))
 
     return data
 
