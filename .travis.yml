@@ -4,8 +4,8 @@ services:
   - docker
 
 before_install:
-- apt-get update
-- apt-get install -y make git
+- sudo apt-get update
+- sudo apt-get install -y make git
 - docker pull alpine
 
 script:
