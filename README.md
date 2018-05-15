@@ -35,7 +35,7 @@ O único requisito é ter o Docker instalado. O guia de instalação pode ser en
 Para gerar os novos dados, basta executar a linha abaixo:
 
 ```bash
-docker run --rm -it -v output:/app/output thenets/opendata-salarios-magistrados
+docker run --rm -it -v $(pwd)/output:/app/output thenets/opendata-salarios-magistrados
 ```
 
 
