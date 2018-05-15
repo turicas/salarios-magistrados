@@ -1,5 +1,7 @@
 [![Build Status](https://travis-ci.org/thenets/salarios-magistrados.svg?branch=develop)](https://travis-ci.org/thenets/salarios-magistrados)
 
+[![Docker Pulls](https://img.shields.io/docker/pulls/thenets/opendata-salarios-magistrados.svg?style=flat-square)](https://hub.docker.com/r/thenets/opendata-salarios-magistrados/)
+
 # Salários Magistrados - CNJ
 
 Script que baixa todas as [planilhas de salários de magistrados do site do
