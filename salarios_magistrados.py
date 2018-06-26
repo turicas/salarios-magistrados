@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import csv
 import datetime
 import io
@@ -205,12 +204,12 @@ def is_filled(data):
 def main():
     now = datetime.datetime.now()
     today = datetime.date(now.year, now.month, now.day)
-    download_path = pathlib.Path('download')
-    output_path = pathlib.Path('output')
-    if not download_path.exists():
-        download_path.mkdir()
-    if not output_path.exists():
-        output_path.mkdir()
+    data_path = pathlib.Path('data')
+    download_path = data_path / 'download'
+    output_path = data_path / 'output'
+    for path in [data_path, download_path, output_path]:
+        if not path.exists():
+            path.mkdir()
 
     # Get spreadsheet links
     links = get_links(date=today)
