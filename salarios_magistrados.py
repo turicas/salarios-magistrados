@@ -186,24 +186,24 @@ def extract_metadata(filename):
     else:
         meta['data_de_publicacao'] = None
 
-    mes_ano = meta['mesano_de_referencia']
-    if isinstance(mes_ano, str):
-        if not regexp_date.match(mes_ano):
-            if ' de ' in mes_ano.lower():
-                mes, ano = mes_ano.lower().split(' de ')
-                if len(ano) == 2:
-                    ano = f'20{ano}'
-                mes = MONTHS2[mes]
-                meta['mesano_de_referencia'] = f'{ano}-{int(mes):02d}-01'
-            elif '/' in mes_ano:
-                mes, ano = mes_ano.split('/')
-                if len(ano) == 2:
-                    ano = f'20{ano}'
-                meta['mesano_de_referencia'] = f'{ano}-{int(mes):02d}-01'
-            else:
-                assert False, f'mesano_de_referencia ({repr(mes_ano)})'
-    else:
-        meta['mesano_de_referencia'] = None
+    #mes_ano = meta['mesano_de_referencia']
+    #if isinstance(mes_ano, str):
+    #    if not regexp_date.match(mes_ano):
+    #        if ' de ' in mes_ano.lower():
+    #            mes, ano = mes_ano.lower().split(' de ')
+    #            if len(ano) == 2:
+    #                ano = f'20{ano}'
+    #            mes = MONTHS2[mes]
+    #            meta['mesano_de_referencia'] = f'{ano}-{int(mes):02d}-01'
+    #        elif '/' in mes_ano:
+    #            mes, ano = mes_ano.split('/')
+    #            if len(ano) == 2:
+    #                ano = f'20{ano}'
+    #            meta['mesano_de_referencia'] = f'{ano}-{int(mes):02d}-01'
+    #        else:
+    #            assert False, f'mesano_de_referencia ({repr(mes_ano)})'
+    #else:
+    #    meta['mesano_de_referencia'] = None
 
     return meta
 
@@ -217,13 +217,13 @@ def convert_row(row_data, metadata):
         elif isinstance(value, str):
             data[key] = value.strip()
 
-    if data['mesano_de_referencia'] is not None:
-        if len(data['mesano_de_referencia']) == 7:  # as in '01/2018'
-            parts = data['mesano_de_referencia'].split('/')
-            data['mesano_de_referencia'] = f'{parts[1]}-{parts[0]}-01'
-        else:
-            parts = data['mesano_de_referencia'].split('-')
-            data['mesano_de_referencia'] = f'{parts[0]}-{parts[1]}-01'
+    #if data['mesano_de_referencia'] is not None:
+    #    if len(data['mesano_de_referencia']) == 7:  # as in '01/2018'
+    #        parts = data['mesano_de_referencia'].split('/')
+    #        data['mesano_de_referencia'] = f'{parts[1]}-{parts[0]}-01'
+    #    else:
+    #        parts = data['mesano_de_referencia'].split('-')
+    #        data['mesano_de_referencia'] = f'{parts[0]}-{parts[1]}-01'
 
     cpf = ''.join(regexp_numbers.findall(data['cpf']))
     if set(cpf) in ({'0'}, {'9'}):
@@ -233,7 +233,7 @@ def convert_row(row_data, metadata):
     return data
 
 
-def extract(name, url, filename):
+def extract(year, month, name, url, filename):
     if filename.name.endswith('.xls'):
         import_function = rows.import_from_xls
     elif filename.name.endswith('.xlsx'):
@@ -244,6 +244,7 @@ def extract(name, url, filename):
     metadata = extract_metadata(filename)
     metadata['url'] = url
     metadata['tribunal'] = name
+    metadata['mesano_de_referencia'] = f'{year}-{month}-01'
     start_row = metadata.pop('start_row')
 
     result = []
@@ -271,7 +272,7 @@ def is_filled(data):
     return values_are_filled and has_name
 
 
-def download_and_extract(name, url, download_path):
+def download_and_extract(year, month, name, url, download_path):
     # Download file
     filename = download_path / urlparse(url).path.split('/')[-1]
     if not filename.exists():
@@ -283,7 +284,7 @@ def download_and_extract(name, url, download_path):
 
     # Extract data
     try:
-        data = extract(name, url, filename)
+        data = extract(year, month, name, url, filename)
     except Exception as exp:
         import traceback
         print(f' ERROR extracting {filename} - {traceback.format_exc().splitlines()[-1]}')
@@ -302,8 +303,8 @@ def main():
         if not path.exists():
             path.mkdir()
 
-    output_links = output_path / f'salarios-magistrados_links.csv.xz'
-    output_contracheque = output_path / f'salarios-magistrados_contracheque.csv.xz'
+    output_links = output_path / f'links.csv.xz'
+    output_contracheque = output_path / f'contracheque.csv.xz'
     fobj_links = io.TextIOWrapper(lzma.open(output_links, mode='w'), encoding='utf-8')
     fobj_contracheque = io.TextIOWrapper(lzma.open(output_contracheque, mode='w'), encoding='utf-8')
     header_links = 'name url date_scraped year month'.split()
@@ -330,7 +331,7 @@ def main():
         with Pool() as pool:
             results = pool.starmap(
                 download_and_extract,
-                [(link.name, link.url, download_path) for link in links]
+                [(year, month, link.name, link.url, download_path) for link in links]
             )
             for table in results:
                 for row in table:

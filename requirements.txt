@@ -1,6 +1,10 @@
+click
 git+https://github.com/turicas/rows.git@develop#egg=rows
 lxml
 openpyxl
 requests
+requests
+requests-cache
+tqdm
 xlrd
 xlwt
