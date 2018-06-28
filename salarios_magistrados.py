@@ -105,9 +105,11 @@ def get_links(year, month, date_scraped):
             continue
 
         data = {
+            'date_scraped': date_scraped,
+            'month': MONTHS2[month],
             'name': row.name.replace('\xa0', ' '),
             'url': unquote(urljoin(url, row.url)).strip(),
-            'date_scraped': date_scraped,
+            'year': year,
         }
         result.append(data)
     return rows.import_from_dicts(result)
@@ -224,7 +226,7 @@ def convert_row(row_data, metadata):
             data['mesano_de_referencia'] = f'{parts[0]}-{parts[1]}-01'
 
     cpf = ''.join(regexp_numbers.findall(data['cpf']))
-    if set(cpf) in ({0}, {9}):
+    if set(cpf) in ({'0'}, {'9'}):
         cpf = ''
     data['cpf'] = cpf
 
@@ -262,9 +264,9 @@ def extract(name, url, filename):
 
 def is_filled(data):
     null_set = {'', Decimal('0'), None, '0', '***.***.***-**'}
-    values = set(data.values())
+    values = set([str(value or '').strip() for value in data.values()])
     values_are_filled = not values.issubset(null_set)
-    has_name = (data['nome'] or '').strip() != ''
+    has_name = (data['nome'] or '').strip() not in ('', '0')
 
     return values_are_filled and has_name
 
@@ -300,11 +302,17 @@ def main():
         if not path.exists():
             path.mkdir()
 
-    output = output_path / f'salarios-magistrados.csv.xz'
-    fobj = io.TextIOWrapper(lzma.open(output, mode='w'), encoding='utf-8')
+    output_links = output_path / f'salarios-magistrados_links.csv.xz'
+    output_contracheque = output_path / f'salarios-magistrados_contracheque.csv.xz'
+    fobj_links = io.TextIOWrapper(lzma.open(output_links, mode='w'), encoding='utf-8')
+    fobj_contracheque = io.TextIOWrapper(lzma.open(output_contracheque, mode='w'), encoding='utf-8')
+    header_links = 'name url date_scraped year month'.split()
     header = field_names + \
             'url tribunal orgao data_de_publicacao mesano_de_referencia'.split()
-    writer = csv.DictWriter(fobj, fieldnames=header)
+    writer_links = csv.DictWriter(fobj_links, fieldnames=header_links)
+    writer_links.writeheader()
+    writer_contracheque = csv.DictWriter(fobj_contracheque, fieldnames=header)
+    writer_contracheque.writeheader()
     start_month, start_year = 11, 2017
     end_month, end_year = today.month, today.year
     for date in month_range(end_year, end_month, start_year, start_month):
@@ -316,8 +324,9 @@ def main():
             print('not found')
             continue
 
+        for link in links:
+            writer_links.writerow(link._asdict())
         print('working...', end='', flush=True)
-        rows.export_to_csv(links, output_path / f'links-{year}-{month}.csv')
         with Pool() as pool:
             results = pool.starmap(
                 download_and_extract,
@@ -325,7 +334,7 @@ def main():
             )
             for table in results:
                 for row in table:
-                    writer.writerow(row)
+                    writer_contracheque.writerow(row)
         print(' done!')
 
 

@@ -4,4 +4,3 @@ set -e
 
 rm -rf data/output
 python salarios_magistrados.py
-xz -z data/output/*.csv
