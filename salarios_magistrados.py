@@ -1,16 +1,28 @@
+import calendar
 import csv
 import datetime
 import io
+import lzma
 import pathlib
 import re
 from collections import OrderedDict
 from decimal import Decimal
+from multiprocessing import Pool
 from urllib.parse import urljoin, urlparse, unquote
 
 import openpyxl
 import requests
 import rows
 import xlrd
+
+
+class MyDecimalField(rows.fields.DecimalField):
+
+    @classmethod
+    def deserialize(cls, value):
+        if value is None:
+            return None
+        return super().deserialize(str(value).replace('???', '').strip())
 
 
 FIELDS = OrderedDict()
@@ -24,17 +36,55 @@ for field_name in field_names:
     if field_name in ('cpf', 'nome', 'cargo', 'lotacao'):
         field_type = rows.fields.TextField
     else:
-        field_type = rows.fields.DecimalField
+        field_type = MyDecimalField
     FIELDS[field_name] = field_type
 regexp_date = re.compile(r'[0-9]{4}-[0-9]{2}-[0-9]{2}')
 regexp_numbers = re.compile(r'[0-9]')
 
+MONTHS = {
+     1: 'janeiro',
+     2: 'fevereiro',
+     3: 'marco',
+     4: 'abril',
+     5: 'maio',
+     6: 'junho',
+     7: 'julho',
+     8: 'agosto',
+     9: 'setembro',
+    10: 'outubro',
+    11: 'novembro',
+    12: 'dezembro',
+}
+MONTHS2 = {value: key for key, value in MONTHS.items()}
 
-def get_links(date):
+
+def month_range(start_year, start_month, end_year, end_month):
+    current = datetime.date(start_year, start_month, 1)
+    end = datetime.date(end_year, end_month, 1)
+
+    if current <= end:
+        while current <= end:
+            yield current
+            current += datetime.timedelta(
+                days=calendar.monthrange(current.year, current.month)[1]
+            )
+    else:
+        one_day = datetime.timedelta(days=1)
+        while current >= end:
+            yield current
+            yesterday = current - one_day
+            current = datetime.date(yesterday.year, yesterday.month, 1)
+
+
+def get_links(year, month, date_scraped):
 
     # Download HTML and get all the links (text + url)
-    url = 'http://www.cnj.jus.br/transparencia/remuneracao-dos-magistrados'
+    month = MONTHS[month]
+    url = f'http://www.cnj.jus.br/transparencia/remuneracao-dos-magistrados/remuneracao-{month}-{year}'
     response = requests.get(url)
+    if not response.ok:
+        raise RuntimeError('Data not found')
+
     rows_xpath = '//a'
     fields_xpath = OrderedDict([
         ('name', './/text()'),
@@ -57,7 +107,7 @@ def get_links(date):
         data = {
             'name': row.name.replace('\xa0', ' '),
             'url': unquote(urljoin(url, row.url)).strip(),
-            'date_scraped': date,
+            'date_scraped': date_scraped,
         }
         result.append(data)
     return rows.import_from_dicts(result)
@@ -91,11 +141,11 @@ def extract_metadata(filename):
         found_header = False
         for row in range(18, 25):
             value = cell_value(sheet, row, 1)
-            if value == 'Nome':
-                found_header = True
-            elif found_header and value is not None:
-                meta['start_row'] = row + 1
+            if found_header and value is not None:
+                meta['start_row'] = row
                 break
+            if value and value.upper() == 'NOME':
+                found_header = True
 
     elif filename.name.endswith('.xlsx'):
         book = openpyxl.load_workbook(filename, data_only=True)
@@ -113,19 +163,43 @@ def extract_metadata(filename):
         found_header = False
         for row in range(19, 25):
             value = cell_value(sheet[f'A{row}'])
-            if value in ('Nome', 'CPF'):
-                found_header = True
-            elif found_header and value is not None:
+            if found_header and value is not None:
                 meta['start_row'] = row + 1
                 break
+            if value in ('Nome', 'CPF'):
+                found_header = True
 
-    if isinstance(meta['data_de_publicacao'], str):
-        assert regexp_date.match(meta['data_de_publicacao'])
+    publicacao = meta['data_de_publicacao']
+    if isinstance(publicacao, str):
+        if not regexp_date.match(publicacao):
+            if publicacao.count('/') == 2:
+                dia, mes, ano = publicacao.split('/')
+                if len(ano) == 2:
+                    ano = f'20{ano}'
+                meta['data_de_publicacao'] = \
+                    f'{ano}-{int(mes):02d}-{int(dia):02d}'
+            else:
+                assert False, \
+                    f'data_de_publicacao ({repr(meta["data_de_publicacao"])})'
     else:
         meta['data_de_publicacao'] = None
 
-    if isinstance(meta['mesano_de_referencia'], str):
-        assert regexp_date.match(meta['mesano_de_referencia'])
+    mes_ano = meta['mesano_de_referencia']
+    if isinstance(mes_ano, str):
+        if not regexp_date.match(mes_ano):
+            if ' de ' in mes_ano.lower():
+                mes, ano = mes_ano.lower().split(' de ')
+                if len(ano) == 2:
+                    ano = f'20{ano}'
+                mes = MONTHS2[mes]
+                meta['mesano_de_referencia'] = f'{ano}-{int(mes):02d}-01'
+            elif '/' in mes_ano:
+                mes, ano = mes_ano.split('/')
+                if len(ano) == 2:
+                    ano = f'20{ano}'
+                meta['mesano_de_referencia'] = f'{ano}-{int(mes):02d}-01'
+            else:
+                assert False, f'mesano_de_referencia ({repr(mes_ano)})'
     else:
         meta['mesano_de_referencia'] = None
 
@@ -149,12 +223,15 @@ def convert_row(row_data, metadata):
             parts = data['mesano_de_referencia'].split('-')
             data['mesano_de_referencia'] = f'{parts[0]}-{parts[1]}-01'
 
-    data['cpf'] = ''.join(regexp_numbers.findall(data['cpf']))
+    cpf = ''.join(regexp_numbers.findall(data['cpf']))
+    if set(cpf) in ({0}, {9}):
+        cpf = ''
+    data['cpf'] = cpf
 
     return data
 
 
-def extract(filename, link):
+def extract(name, url, filename):
     if filename.name.endswith('.xls'):
         import_function = rows.import_from_xls
     elif filename.name.endswith('.xlsx'):
@@ -163,8 +240,8 @@ def extract(filename, link):
         raise ValueError('Cannot parse this spreadsheet')
 
     metadata = extract_metadata(filename)
-    metadata['url'] = link.url
-    metadata['tribunal'] = link.name
+    metadata['url'] = url
+    metadata['tribunal'] = name
     start_row = metadata.pop('start_row')
 
     result = []
@@ -180,17 +257,8 @@ def extract(filename, link):
             result.append(convert_row(row_data, metadata))
 
     # TODO: check rows with rendimento_liquido = 0
-    result.sort(key=lambda row: (row['orgao'],
-                                 - (row['rendimento_liquido'] or 0)))
     return result
 
-
-def export_csv(data, filename, encoding='utf8'):
-    with open(filename, mode='w', encoding=encoding) as fobj:
-        writer = csv.DictWriter(fobj, fieldnames=sorted(data[0].keys()))
-        writer.writeheader()
-        for row in data:
-            writer.writerow(row)
 
 def is_filled(data):
     null_set = {'', Decimal('0'), None, '0', '***.***.***-**'}
@@ -199,6 +267,27 @@ def is_filled(data):
     has_name = (data['nome'] or '').strip() != ''
 
     return values_are_filled and has_name
+
+
+def download_and_extract(name, url, download_path):
+    # Download file
+    filename = download_path / urlparse(url).path.split('/')[-1]
+    if not filename.exists():
+        try:
+            download(url, filename)
+        except RuntimeError as exception:
+            print(f' ERROR downloading {url} - {exception.args[0]}')
+            return []
+
+    # Extract data
+    try:
+        data = extract(name, url, filename)
+    except Exception as exp:
+        import traceback
+        print(f' ERROR extracting {filename} - {traceback.format_exc().splitlines()[-1]}')
+        return []
+    else:
+        return data
 
 
 def main():
@@ -211,44 +300,33 @@ def main():
         if not path.exists():
             path.mkdir()
 
-    # Get spreadsheet links
-    links = get_links(date=today)
-    rows.export_to_csv(links, output_path / f'links-{today}.csv')
-
-    # Download all the links
-    result = []
-    for link in links:
-        print(link.name)
-
-        # Download file
-        print(f'  Downloading ({link.url})...', end='', flush=True)
-        filename = download_path / urlparse(link.url).path.split('/')[-1]
-        if filename.exists():
-            print(f' already downloaded.')
-        else:
-            try:
-                download(link.url, filename)
-            except RuntimeError as exception:
-                print(f' {exception.args[0]}')
-                continue
-            else:
-                print(' done.')
-
-        # Extract data
-        print(f'  Extracting ({filename})...', end='', flush=True)
+    output = output_path / f'salarios-magistrados.csv.xz'
+    fobj = io.TextIOWrapper(lzma.open(output, mode='w'), encoding='utf-8')
+    header = field_names + \
+            'url tribunal orgao data_de_publicacao mesano_de_referencia'.split()
+    writer = csv.DictWriter(fobj, fieldnames=header)
+    start_month, start_year = 11, 2017
+    end_month, end_year = today.month, today.year
+    for date in month_range(end_year, end_month, start_year, start_month):
+        year, month = date.year, date.month
+        print(f'[{year}-{month:02d}] ', end='', flush=True)
         try:
-            data = extract(filename, link)
-        except Exception as exp:
-            import traceback
-            print(f' ERROR! {traceback.format_exc().splitlines()[-1]}')
-        else:
-            print(f' done (rows extracted: {len(data)}).')
-            result.extend(data)
+            links = get_links(year, month, date_scraped=today)
+        except RuntimeError:  # Month not found
+            print('not found')
+            continue
 
-    # Extract everything to a new CSV
-    output = output_path / f'salarios-magistrados-{today}.csv'
-    print(f'Extracting result to {output}...')
-    export_csv(result, output)
+        print('working...', end='', flush=True)
+        rows.export_to_csv(links, output_path / f'links-{year}-{month}.csv')
+        with Pool() as pool:
+            results = pool.starmap(
+                download_and_extract,
+                [(link.name, link.url, download_path) for link in links]
+            )
+            for table in results:
+                for row in table:
+                    writer.writerow(row)
+        print(' done!')
 
 
 if __name__ == '__main__':

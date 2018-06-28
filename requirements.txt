@@ -1,6 +1,6 @@
-requests
-git+https://github.com/turicas/rows.git@develop
+git+https://github.com/turicas/rows.git@develop#egg=rows
 lxml
+openpyxl
+requests
 xlrd
 xlwt
-openpyxl
