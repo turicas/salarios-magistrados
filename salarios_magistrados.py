@@ -225,7 +225,7 @@ def convert_row(row_data, metadata):
     #        parts = data['mesano_de_referencia'].split('-')
     #        data['mesano_de_referencia'] = f'{parts[0]}-{parts[1]}-01'
 
-    cpf = ''.join(regexp_numbers.findall(data['cpf'])).strip()
+    cpf = ''.join(regexp_numbers.findall(data['cpf'] or '')).strip()
     if set(cpf) in ({'0'}, {'9'}) or len(cpf) < 4:
         cpf = ''
     data['cpf'] = cpf
