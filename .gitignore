@@ -1,5 +1,10 @@
+*.csv
+*.db
 *.egg-info/
+*.log
 *.pyc
+*.sqlite
+*.sw?
 *~
 .*.sw?
 .DS_Store
@@ -8,9 +13,14 @@
 .directory
 .env
 .idea/*
+.ipynb_checkpoints/
+.pytest_cache/
 .tox
 MANIFEST
 build/*
-dist/*
-reg_settings.py
 data/*
+dist/*
+docs-build/
+docs/man/
+docs/reference/
+reg_settings.py
