@@ -2,5 +2,9 @@
 
 set -e
 
-rm -rf data/output
-python salarios_magistrados.py
+rm -rf data/
+mkdir -p data/output
+
+time scrapy runspider --loglevel=INFO -o data/output/planilha.csv download_files.py
+gzip data/output/planilha.csv
+time python parse_files.py
