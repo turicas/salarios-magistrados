@@ -1,10 +1,13 @@
+cached_property
 click
 git+https://github.com/turicas/rows.git@develop#egg=rows
 lxml
-openpyxl
+openpyxl==2.5.12
+dataclasses
 requests
 requests
 requests-cache
+scrapy
 tqdm
 xlrd
 xlwt
