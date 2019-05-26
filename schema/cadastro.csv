@@ -1,0 +1,8 @@
+field_name,field_type,options
+cpf,cpf,
+nome,text,
+matricula,text,
+lotacao_de_origem,text,
+orgao_de_origem,text,
+cargo_de_origem,text,
+situacao,text,optional
