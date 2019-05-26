@@ -63,6 +63,8 @@ def read_schema(filename):
             "cpf": CPFField,
             "text": rows.fields.TextField,
             "decimal": CustomDecimalField,
+            "date": rows.fields.DateField,
+            "integer": rows.fields.IntegerField,
         },
     )
 
