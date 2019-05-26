@@ -10,6 +10,7 @@ from rows.utils import slug
 
 import settings
 import utils
+from utils import fix_tribunal
 
 
 class SalariosMagistradosSpider(scrapy.Spider):
@@ -62,13 +63,13 @@ class SalariosMagistradosSpider(scrapy.Spider):
 
     def parse_month(self, response):
         meta = response.request.meta
-        month_meta = {"year": meta["year"], "month": meta["month"]}
+        month_meta = {"ano": meta["year"], "mes": meta["month"]}
 
         rows_xpath = (
             "//a[contains(@href, 'xls') and not(contains(text(), 'documento'))]"
         )
         fields_xpath = OrderedDict(
-            [("name", ".//text()"), ("download_url", ".//@href")]
+            [("tribunal", ".//text()"), ("url", ".//@href")]
         )
         table = rows.import_from_xpath(
             io.BytesIO(response.body),
@@ -77,7 +78,7 @@ class SalariosMagistradosSpider(scrapy.Spider):
             fields_xpath=fields_xpath,
         )
         for row in table:
-            url = urljoin(self.start_urls[0], unquote(row.download_url)).strip()
+            url = urljoin(self.start_urls[0], unquote(row.url)).strip()
 
             # Fix URLs
             url = url.replace("http:/w", "http://w")
@@ -105,9 +106,9 @@ class SalariosMagistradosSpider(scrapy.Spider):
                 court_meta = month_meta.copy()
                 court_meta.update(
                     {
-                        "downloaded_at": datetime.datetime.now(),
-                        "filename": filename.relative_to(settings.BASE_PATH),
-                        "name": row.name.replace("\xa0", " "),
+                        "baixado_em": datetime.datetime.now(),
+                        "arquivo": filename.relative_to(settings.BASE_PATH),
+                        "tribunal": fix_tribunal((row.tribunal or "").replace("\xa0", " ")),
                         "url": url,
                     }
                 )
@@ -121,7 +122,7 @@ class SalariosMagistradosSpider(scrapy.Spider):
                 yield court_meta
 
     def save_file(self, response):
-        filename = Path(response.request.meta["row"]["filename"])
+        filename = Path(response.request.meta["row"]["arquivo"])
         if not filename.parent.exists():
             filename.parent.mkdir(parents=True)
         with open(filename, mode="wb") as fobj:
