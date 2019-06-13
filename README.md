@@ -7,20 +7,23 @@ aba "Contracheque", faz algumas limpezas e exporta tudo para CSV.
 
 ## Licença
 
-A licença do código é [LGPL3](https://www.gnu.org/licenses/lgpl-3.0.en.html). e
-dos dados [Creative Commons Attribution
+A licença do código é [LGPL3](https://www.gnu.org/licenses/lgpl-3.0.en.html) e
+dos dados convertidos [Creative Commons Attribution
 ShareAlike](https://creativecommons.org/licenses/by-sa/4.0/). Caso utilize os
-dados, cite a fonte original e quem tratou os dados, como: **Fonte: Conselho
-Nacional de Justiça, dados tratados por Álvaro
+dados, **cite a fonte original e quem tratou os dados**, como: **Fonte:
+Conselho Nacional de Justiça, dados tratados por Álvaro
 Justen/[Brasil.IO](https://brasil.io/)**. Caso compartilhe os dados, **utilize
 a mesma licença**.
 
 
 ## Dados
 
-Caso você não queira rodar o script em sua máquina, [acesse diretamente a
-planilha
-convertida](https://drive.google.com/open?id=1R59t64Ml5v94YtGu76w5p17PEPb3V2dm).
+Caso você não queira/possa rodar o script, **[acesse diretamente os dados
+convertidos no Brasil.IO](https://brasil.io/dataset/salarios-magistrados)**.
+
+Se esse programa e/ou os dados resultantes foram úteis a você ou à sua empresa,
+considere [fazer uma doação ao projeto Brasil.IO](https://brasil.io/doe), que é
+mantido voluntariamente.
 
 
 ### Erros nos Dados
