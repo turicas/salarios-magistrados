@@ -18,8 +18,9 @@ import utils
 
 
 # TODO: add option to pass custom logger to FileExtractor class
-if not settings.LOG_PATH.exists():
-    settings.LOG_PATH.mkdir()
+for path in (settings.LOG_PATH, settings.OUTPUT_PATH):
+    if not path.exists():
+        path.mkdir()
 logging.basicConfig(
     filename=settings.LOG_PATH / "parser.log", filemode="w", format="%(name)s - %(levelname)s - %(message)s"
 )

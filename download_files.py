@@ -13,6 +13,10 @@ import utils
 from utils import fix_tribunal
 
 
+if not settings.DOWNLOAD_PATH.exists():
+    settings.DOWNLOAD_PATH.mkdir()
+
+
 class SalariosMagistradosSpider(scrapy.Spider):
 
     month_url = "http://www.cnj.jus.br/transparencia/remuneracao-dos-magistrados/remuneracao-{month_slug}-{year}"
