@@ -8,7 +8,7 @@ gratificacao_natalina,decimal,
 antecipacao_de_gratificacao_natalina,decimal,
 substituicao,decimal,
 gratificacao_por_exercicio_cumulativo,decimal,
-gratificacao_por_encargo_cursoconcurso,decimal,
+gratificacao_por_encargo_curso_concurso,decimal,
 pagamentos_retroativos,decimal,
 jeton,decimal,
 diarias,decimal,optional

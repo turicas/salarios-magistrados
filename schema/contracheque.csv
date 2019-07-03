@@ -17,8 +17,3 @@ rendimento_liquido,decimal,
 remuneracao_do_orgao_de_origem,decimal,
 diarias,decimal,
 diarias_2,decimal,optional
-tribunal,text,
-mes_de_referencia,integer,
-mes_ano_de_referencia,date,
-ano_de_referencia,integer,
-data_de_publicacao,date,

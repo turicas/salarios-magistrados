@@ -162,10 +162,6 @@ def fix_header(sheet_name, header):
             .replace("correcao_monetariajuros", "correcao_monetaria_juros")
             .replace("vantagens_eventuais", "direitos_eventuais")
             .replace("vantagens_pessoais", "direitos_pessoais")
-            .replace(
-                "vantagens_artigo_184_e_192_lei_171152",
-                "vantagens_artigo_184_i_e_192_i_lei_171152",
-            )
         )
         if field_name.startswith(sheet_slug):
             field_name = field_name[len(sheet_slug) :]
@@ -195,6 +191,12 @@ def fix_header(sheet_name, header):
             field_name = "parcela_autonoma_de_equivalencia"
         elif field_name == "previdencia_publica":
             field_name = "descontos_previdencia_publica"
+        elif field_name == "vantagens_artigo_184_e_192_lei_171152":
+            field_name = "vantagens_artigo_184_i_e_192_i_lei_171152"
+        elif field_name == "abono_constitucional_de_1_3_de_ferias":
+            field_name = "abono_constitucional_de_13_de_ferias"
+        elif field_name == "gratificacao_por_encargo_cursoconcurso":
+            field_name = "gratificacao_por_encargo_curso_concurso"
 
         new_header.append(field_name)
     header = make_header(new_header)
