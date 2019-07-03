@@ -603,7 +603,11 @@ if __name__ == "__main__":
             continue
 
         extension = filename.name.split(".")[-1].lower()
-        metadata = {"ano": row.ano, "mes": row.mes, "tribunal": row.tribunal}
+        metadata = {
+            "ano": row.ano,
+            "mes": row.mes,
+            "tribunal": utils.fix_tribunal(row.tribunal),
+        }
         extractor = extractors[extension](filename, metadata)
         if extractor.workbook is None:
             continue
