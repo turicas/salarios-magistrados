@@ -18,8 +18,10 @@ import utils
 
 
 # TODO: add option to pass custom logger to FileExtractor class
+if not settings.LOG_PATH.exists():
+    settings.LOG_PATH.mkdir()
 logging.basicConfig(
-    filename="parser.log", filemode="w", format="%(name)s - %(levelname)s - %(message)s"
+    filename=settings.LOG_PATH / "parser.log", filemode="w", format="%(name)s - %(levelname)s - %(message)s"
 )
 regexp_date = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 regexp_numbers = re.compile(r"[0-9]")
