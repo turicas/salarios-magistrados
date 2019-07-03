@@ -22,7 +22,9 @@ for path in (settings.LOG_PATH, settings.OUTPUT_PATH):
     if not path.exists():
         path.mkdir()
 logging.basicConfig(
-    filename=settings.LOG_PATH / "parser.log", filemode="w", format="%(name)s - %(levelname)s - %(message)s"
+    filename=settings.LOG_PATH / "parser.log",
+    filemode="w",
+    format="%(name)s - %(levelname)s - %(message)s",
 )
 regexp_date = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 regexp_numbers = re.compile(r"[0-9]")
@@ -407,7 +409,7 @@ class FileExtractor:
             meta["mes_ano_de_referencia"] = reference_from_metadata
         if meta["mes_ano_de_referencia"] != reference_from_metadata:
             logging.warning(
-                "mes_ano_de_referencia ({repr(reference_month)}) different from file metadata ({repr(reference_from_metadata)})"
+                f"mes_ano_de_referencia ({repr(reference_month)}) different from file metadata ({repr(reference_from_metadata)})"
             )
 
         # Publication date

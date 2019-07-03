@@ -25,7 +25,9 @@ class SalariosMagistradosSpider(scrapy.Spider):
 
     def make_month_request(self, year, month, force_url=None):
         if force_url is None:
-            url = self.month_url.format(month_slug=slug(utils.MONTHS[month - 1]), year=year)
+            url = self.month_url.format(
+                month_slug=slug(utils.MONTHS[month - 1]), year=year
+            )
         else:
             url = force_url
 
@@ -72,9 +74,7 @@ class SalariosMagistradosSpider(scrapy.Spider):
         rows_xpath = (
             "//a[contains(@href, 'xls') and not(contains(text(), 'documento'))]"
         )
-        fields_xpath = OrderedDict(
-            [("tribunal", ".//text()"), ("url", ".//@href")]
-        )
+        fields_xpath = OrderedDict([("tribunal", ".//text()"), ("url", ".//@href")])
         table = rows.import_from_xpath(
             io.BytesIO(response.body),
             rows_xpath=rows_xpath,
@@ -112,7 +112,9 @@ class SalariosMagistradosSpider(scrapy.Spider):
                     {
                         "baixado_em": datetime.datetime.now(),
                         "arquivo": filename.relative_to(settings.BASE_PATH),
-                        "tribunal": fix_tribunal((row.tribunal or "").replace("\xa0", " ")),
+                        "tribunal": fix_tribunal(
+                            (row.tribunal or "").replace("\xa0", " ")
+                        ),
                         "url": url,
                     }
                 )

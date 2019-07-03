@@ -24,9 +24,7 @@ def fix_tribunal(tribunal):
 
     tribunal = regexp_tribunal_ordinal.sub(
         "\\1ª ",
-        regexp_tribunal_fim.sub("", tribunal)
-        .replace("/ ", "/")
-        .replace(" /", "/")
+        regexp_tribunal_fim.sub("", tribunal).replace("/ ", "/").replace(" /", "/"),
     )
     result = []
     for word in tribunal.title().split():
