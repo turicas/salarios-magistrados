@@ -1,9 +1,10 @@
 cached_property
 click
+dataclasses
 git+https://github.com/turicas/rows.git@develop#egg=rows
 lxml
 openpyxl==2.5.12
-dataclasses
+python-Levenshtein
 requests
 requests
 requests-cache

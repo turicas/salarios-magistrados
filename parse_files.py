@@ -302,9 +302,10 @@ class FileExtractor:
             logging.error(f"Sheet {repr(name)} not found on {self.relative_filename}")
             return None
 
-        logging.warning(
-            f"Using {repr(new_name)} instead of {repr(name)} on {self.relative_filename}"
-        )
+        if not utils.is_sheet_name_equivalent(new_name, name):
+            logging.warning(
+                f"Using {repr(new_name)} instead of {repr(name)} on {self.relative_filename}"
+            )
         return new_name
 
     def sheet_rows(self, name):
