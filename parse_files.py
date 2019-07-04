@@ -302,10 +302,6 @@ class FileExtractor:
             logging.error(f"Sheet {repr(name)} not found on {self.relative_filename}")
             return None
 
-        if not utils.is_sheet_name_equivalent(new_name, name):
-            logging.warning(
-                f"Using {repr(new_name)} instead of {repr(name)} on {self.relative_filename}"
-            )
         return new_name
 
     def sheet_rows(self, name):
@@ -368,19 +364,19 @@ class FileExtractor:
         # Check, convert and rename if needed
 
         # Court name
-        court_from_metadata = self.file_metadata["tribunal"]
-        court = meta.pop("orgao", "")
-        if (
-            court.lower() != court_from_metadata.lower()
-            and court.lower() not in court_from_metadata.lower()
-        ):
+        court_from_metadata = utils.fix_tribunal(self.file_metadata["tribunal"])
+        court = utils.fix_tribunal(meta.pop("orgao", ""))
+        if utils.is_court_name_equivalent(court_from_metadata, court):
+            court = court_from_metadata
+        else:
+            # TODO: may not procceed
             logging.warning(
-                f"orgao from metadata ({repr(court or None)}) different from file metadata ({repr(self.file_metadata['tribunal'])}) on {self.relative_filename}"
+                f"orgao from metadata ({repr(court or None)}) different from file metadata ({repr(court_from_metadata)}) on {self.relative_filename}"
             )
         # Using same court named from download page to maintain consistency
         # (court names from there are more correct in general and will make
         # joins between tables easily).
-        meta["tribunal"] = utils.fix_tribunal(court_from_metadata or court)
+        meta["tribunal"] = court
 
         # Reference month
         reference_month = str(meta.pop("mesano_de_referencia", None) or "")

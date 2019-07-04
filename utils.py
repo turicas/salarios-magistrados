@@ -178,15 +178,15 @@ def fix_tribunal(tribunal):
     return result
 
 
-def is_sheet_name_equivalent(a, b):
+def is_court_name_equivalent(a, b):
     """
-    >>> is_sheet_name_equivalent('Tribunal Regional do Trabalho da 7 Região', 'Tribunal Regional do Trabalho da 7ª Região')
+    >>> is_court_name_equivalent('Tribunal Regional do Trabalho da 7 Região', 'Tribunal Regional do Trabalho da 7ª Região')
     True
-    >>> is_sheet_name_equivalent('Tribunal Regional do Trabalho da 7 Região', 'Tribunal Regional do Trabalho 7 Região')
+    >>> is_court_name_equivalent('Tribunal Regional do Trabalho da 7 Região', 'Tribunal Regional do Trabalho 7 Região')
     True
-    >>> is_sheet_name_equivalent('Vantagens Eventuais', 'Direitos Eventuais')
+    >>> is_court_name_equivalent('Vantagens Eventuais', 'Direitos Eventuais')
     True
-    >>> is_sheet_name_equivalent('TRT 1a Região', 'Tribunal Regional do Trabalho 1a Região')
+    >>> is_court_name_equivalent('TRT 1a Região', 'Tribunal Regional do Trabalho 1a Região')
     True
     """
 
