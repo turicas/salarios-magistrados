@@ -34,7 +34,7 @@ regexp_parenthesis = re.compile("(\([^)]+\))")
 class CustomDecimalField(rows.fields.DecimalField):
     @classmethod
     def deserialize(cls, value):
-        if not value or value.strip() in ("R$ -", "R$-"):
+        if not value or str(value or "").strip() in ("R$ -", "R$-"):
             return None
         elif isinstance(value, str):  # When string, they use "," as separator
             value = value.replace("???", "").replace(".", "").replace(",", ".")
