@@ -14,7 +14,7 @@ from utils import fix_tribunal
 
 
 if not settings.DOWNLOAD_PATH.exists():
-    settings.DOWNLOAD_PATH.mkdir()
+    settings.DOWNLOAD_PATH.mkdir(parents=True)
 
 
 class SalariosMagistradosSpider(scrapy.Spider):
